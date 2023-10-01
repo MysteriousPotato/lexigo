@@ -4,7 +4,7 @@ package test
 import (
 	"context"
 	"fmt"
-	"github.com/MysteriousPotato/lexigo"
+	"github.com/MysteriousPotato/lexigo/pkg"
 	"golang.org/x/text/language"
 )
 

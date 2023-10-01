@@ -8,8 +8,14 @@ Lexigo is still in the early stage of development, expect breaking changes.
 
 ## Installation
 
+#### Codegen: 
 ```bash
-go install github.com/MysteriousPotato/lexigo
+go install github.com/MysteriousPotato/lexigo/cmd/lexigogen
+```
+
+#### Library:
+```bash
+go install github.com/MysteriousPotato/lexigo/pkg
 ```
 
 ## Usage
@@ -17,8 +23,10 @@ go install github.com/MysteriousPotato/lexigo
 ### 1. Define your locales
 - File names must be valid language codes Ex:. en.json, en_US.json
 - All locale files must be under the same directory. Lexigo looks up the directory recursively, so you can structure the directory however you like.
-- Only one file must have the "default" suffix in its name Ex.: en.default.json. Lexigo will use the default language as a reference for other languages.   
-```json
+- Only one file must have the "default" suffix in its name Ex.: en.default.json. Lexigo will use the default language as a reference for other languages.
+
+#### ./src/en.default.json:
+```
 {
   // You can nest locales
   "vegetables": {
@@ -72,10 +80,11 @@ package mypkg
 ```go
 import 	(
 	"golang.org/x/text/language"
+	"https://github.com/MysteriousPotato/lexigo/pkg"
 )
 
 func main() {
-	// Prints "Potato"
+    // Prints "Potato"
     fmt.Println(mypkg.Locales.Vegetables.Potato.NewFromTag(language.English))
 
     // Prints "I hate potato"

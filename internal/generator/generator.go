@@ -92,7 +92,7 @@ func NewGenerator(w io.Writer, params Params) (*Generator, error) {
 			jen.Lit("fmt"),
 			jen.Lit("context"),
 			jen.Lit("golang.org/x/text/language"),
-			jen.Lit("github.com/MysteriousPotato/lexigo"),
+			jen.Lit("github.com/MysteriousPotato/lexigo/pkg"),
 		).
 		Line().
 		Var().

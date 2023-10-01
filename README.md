@@ -96,7 +96,7 @@ func main() {
     ))
 	
     // You can manually inject the language into the context for using "New"
-    ctx := lexico.WithLanguage(ctx, language.English) 
+    ctx := lexigo.WithLanguage(ctx, language.English) 
     fmt.Println(mypkg.Locales.Vegetables.Potato.New(ctx))
 	
     // Or use the built-in middleware "LanguageMiddleware"

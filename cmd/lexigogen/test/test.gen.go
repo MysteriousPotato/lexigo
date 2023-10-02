@@ -398,8 +398,6 @@ func (p InnerPlaceholders) fr() []any {
 	return []any{p.Placeholder2, p.Placeholder1}
 }
 
-var outerValue = outer{Inner: inner{}}
-
 type outer struct {
 	Inner inner
 }

@@ -305,8 +305,10 @@ func (g *Generator) newNestedLocale(fieldName, namespace string, valueOf reflect
 		typeCodes.Add(jen.Id(eleFieldName).Id(eleTypeName))
 	}
 
-	if err := g.newStructInstance(valueName, typeName, valueCodes); err != nil {
-		return err
+	if namespace == "" {
+		if err := g.newStructInstance(valueName, typeName, valueCodes); err != nil {
+			return err
+		}
 	}
 	if err := g.newStructType(typeName, typeCodes); err != nil {
 		return err

@@ -15,85 +15,146 @@ var (
 
 var Matcher = language.NewMatcher([]language.Tag{en, fr})
 
-type locale struct {
-	en string
-	fr string
+type locale interface {
+	en() string
+	fr() string
 }
 
-var myLocaleValue = myLocale{
-	en: "myLocale",
-	fr: "myLocale fr",
+type placeholders interface {
+	en() []any
+	fr() []any
 }
 
-type myLocale locale
+type Locale struct {
+	locale       locale
+	placeholders placeholders
+}
 
-func (l myLocale) new(lang language.Tag, level int) string {
+func (l Locale) parse(lang language.Tag, level int) string {
 	if level == 1 {
 		lang, _, _ = Matcher.Match(lang)
 	}
 	switch lang {
 	case en:
-		return fmt.Sprintf(l.en)
+		if l.placeholders == nil {
+			return l.locale.en()
+		}
+		return fmt.Sprintf(l.locale.en(), l.placeholders.en()...)
 	case fr:
-		return fmt.Sprintf(l.fr)
+		if l.placeholders == nil {
+			return l.locale.fr()
+		}
+		return fmt.Sprintf(l.locale.fr(), l.placeholders.fr()...)
 	}
 	parent := lang
 	if level > 0 {
 		parent = lang.Parent()
 	}
-	return l.new(parent, level+1)
+	return l.parse(parent, level+1)
 }
 
-func (l myLocale) New(ctx context.Context) string {
+func (l Locale) FromCtx(ctx context.Context) string {
 	lang, _ := lexigo.FromCtx(ctx)
-	return l.new(lang, 0)
+	return l.parse(lang, 0)
 }
 
-func (l myLocale) NewFromString(lang string) string {
+func (l Locale) FromString(lang string) string {
 	tag, _ := language.Parse(lang)
-	return l.new(tag, 0)
+	return l.parse(tag, 0)
 }
 
-func (l myLocale) NewFromTag(lang language.Tag) string {
-	return l.new(lang, 0)
+func (l Locale) FromTag(lang language.Tag) string {
+	return l.parse(lang, 0)
 }
 
-var myLocaleAnyValue = myLocaleAny{
-	en: "myLocale %v",
-	fr: "myLocale %v fr",
+type myLocale struct{}
+
+func (l myLocale) en() string {
+	return "myLocale"
 }
 
-type myLocaleAny locale
+func (l myLocale) fr() string {
+	return "myLocale fr"
+}
 
-func (l myLocaleAny) new(lang language.Tag, level int, placeholders MyLocaleAnyPlaceholders) string {
+func (l myLocale) parse(lang language.Tag, level int) string {
 	if level == 1 {
 		lang, _, _ = Matcher.Match(lang)
 	}
 	switch lang {
 	case en:
-		return fmt.Sprintf(l.en, placeholders.en()...)
+		return l.en()
 	case fr:
-		return fmt.Sprintf(l.fr, placeholders.fr()...)
+		return l.fr()
 	}
 	parent := lang
 	if level > 0 {
 		parent = lang.Parent()
 	}
-	return l.new(parent, level+1, placeholders)
+	return l.parse(parent, level+1)
 }
 
-func (l myLocaleAny) New(ctx context.Context, placeholders MyLocaleAnyPlaceholders) string {
+func (l myLocale) FromCtx(ctx context.Context) string {
 	lang, _ := lexigo.FromCtx(ctx)
-	return l.new(lang, 0, placeholders)
+	return l.parse(lang, 0)
 }
 
-func (l myLocaleAny) NewFromString(lang string, placeholders MyLocaleAnyPlaceholders) string {
+func (l myLocale) FromString(lang string) string {
 	tag, _ := language.Parse(lang)
-	return l.new(tag, 0, placeholders)
+	return l.parse(tag, 0)
 }
 
-func (l myLocaleAny) NewFromTag(lang language.Tag, placeholders MyLocaleAnyPlaceholders) string {
-	return l.new(lang, 0, placeholders)
+func (l myLocale) FromTag(lang language.Tag) string {
+	return l.parse(lang, 0)
+}
+
+func (l myLocale) Locale() Locale {
+	return Locale{locale: l}
+}
+
+type myLocaleAny struct{}
+
+func (l myLocaleAny) en() string {
+	return "myLocale %v"
+}
+
+func (l myLocaleAny) fr() string {
+	return "myLocale %v fr"
+}
+
+func (l myLocaleAny) parse(lang language.Tag, level int, placeholders MyLocaleAnyPlaceholders) string {
+	if level == 1 {
+		lang, _, _ = Matcher.Match(lang)
+	}
+	switch lang {
+	case en:
+		return fmt.Sprintf(l.en(), placeholders.en()...)
+	case fr:
+		return fmt.Sprintf(l.fr(), placeholders.fr()...)
+	}
+	parent := lang
+	if level > 0 {
+		parent = lang.Parent()
+	}
+	return l.parse(parent, level+1, placeholders)
+}
+
+func (l myLocaleAny) FromCtx(ctx context.Context, placeholders MyLocaleAnyPlaceholders) string {
+	lang, _ := lexigo.FromCtx(ctx)
+	return l.parse(lang, 0, placeholders)
+}
+
+func (l myLocaleAny) FromString(lang string, placeholders MyLocaleAnyPlaceholders) string {
+	tag, _ := language.Parse(lang)
+	return l.parse(tag, 0, placeholders)
+}
+
+func (l myLocaleAny) FromTag(lang language.Tag, placeholders MyLocaleAnyPlaceholders) string {
+	return l.parse(lang, 0, placeholders)
+}
+
+func (l myLocaleAny) Locale(placeholders MyLocaleAnyPlaceholders) Locale {
+	return Locale{locale: l, placeholders: placeholders}
 }
 
 type MyLocaleAnyPlaceholders struct {
@@ -108,42 +169,49 @@ func (p MyLocaleAnyPlaceholders) fr() []any {
 	return []any{p.Placeholder}
 }
 
-var myLocaleFloatValue = myLocaleFloat{
-	en: "myLocale %f",
-	fr: "myLocale %f fr",
+type myLocaleFloat struct{}
+
+func (l myLocaleFloat) en() string {
+	return "myLocale %f"
 }
 
-type myLocaleFloat locale
+func (l myLocaleFloat) fr() string {
+	return "myLocale %f fr"
+}
 
-func (l myLocaleFloat) new(lang language.Tag, level int, placeholders MyLocaleFloatPlaceholders) string {
+func (l myLocaleFloat) parse(lang language.Tag, level int, placeholders MyLocaleFloatPlaceholders) string {
 	if level == 1 {
 		lang, _, _ = Matcher.Match(lang)
 	}
 	switch lang {
 	case en:
-		return fmt.Sprintf(l.en, placeholders.en()...)
+		return fmt.Sprintf(l.en(), placeholders.en()...)
 	case fr:
-		return fmt.Sprintf(l.fr, placeholders.fr()...)
+		return fmt.Sprintf(l.fr(), placeholders.fr()...)
 	}
 	parent := lang
 	if level > 0 {
 		parent = lang.Parent()
 	}
-	return l.new(parent, level+1, placeholders)
+	return l.parse(parent, level+1, placeholders)
 }
 
-func (l myLocaleFloat) New(ctx context.Context, placeholders MyLocaleFloatPlaceholders) string {
+func (l myLocaleFloat) FromCtx(ctx context.Context, placeholders MyLocaleFloatPlaceholders) string {
 	lang, _ := lexigo.FromCtx(ctx)
-	return l.new(lang, 0, placeholders)
+	return l.parse(lang, 0, placeholders)
 }
 
-func (l myLocaleFloat) NewFromString(lang string, placeholders MyLocaleFloatPlaceholders) string {
+func (l myLocaleFloat) FromString(lang string, placeholders MyLocaleFloatPlaceholders) string {
 	tag, _ := language.Parse(lang)
-	return l.new(tag, 0, placeholders)
+	return l.parse(tag, 0, placeholders)
 }
 
-func (l myLocaleFloat) NewFromTag(lang language.Tag, placeholders MyLocaleFloatPlaceholders) string {
-	return l.new(lang, 0, placeholders)
+func (l myLocaleFloat) FromTag(lang language.Tag, placeholders MyLocaleFloatPlaceholders) string {
+	return l.parse(lang, 0, placeholders)
+}
+
+func (l myLocaleFloat) Locale(placeholders MyLocaleFloatPlaceholders) Locale {
+	return Locale{locale: l, placeholders: placeholders}
 }
 
 type MyLocaleFloatPlaceholders struct {
@@ -158,42 +226,49 @@ func (p MyLocaleFloatPlaceholders) fr() []any {
 	return []any{p.Placeholder}
 }
 
-var myLocaleIntValue = myLocaleInt{
-	en: "myLocale %d",
-	fr: "myLocale %d fr",
+type myLocaleInt struct{}
+
+func (l myLocaleInt) en() string {
+	return "myLocale %d"
 }
 
-type myLocaleInt locale
+func (l myLocaleInt) fr() string {
+	return "myLocale %d fr"
+}
 
-func (l myLocaleInt) new(lang language.Tag, level int, placeholders MyLocaleIntPlaceholders) string {
+func (l myLocaleInt) parse(lang language.Tag, level int, placeholders MyLocaleIntPlaceholders) string {
 	if level == 1 {
 		lang, _, _ = Matcher.Match(lang)
 	}
 	switch lang {
 	case en:
-		return fmt.Sprintf(l.en, placeholders.en()...)
+		return fmt.Sprintf(l.en(), placeholders.en()...)
 	case fr:
-		return fmt.Sprintf(l.fr, placeholders.fr()...)
+		return fmt.Sprintf(l.fr(), placeholders.fr()...)
 	}
 	parent := lang
 	if level > 0 {
 		parent = lang.Parent()
 	}
-	return l.new(parent, level+1, placeholders)
+	return l.parse(parent, level+1, placeholders)
 }
 
-func (l myLocaleInt) New(ctx context.Context, placeholders MyLocaleIntPlaceholders) string {
+func (l myLocaleInt) FromCtx(ctx context.Context, placeholders MyLocaleIntPlaceholders) string {
 	lang, _ := lexigo.FromCtx(ctx)
-	return l.new(lang, 0, placeholders)
+	return l.parse(lang, 0, placeholders)
 }
 
-func (l myLocaleInt) NewFromString(lang string, placeholders MyLocaleIntPlaceholders) string {
+func (l myLocaleInt) FromString(lang string, placeholders MyLocaleIntPlaceholders) string {
 	tag, _ := language.Parse(lang)
-	return l.new(tag, 0, placeholders)
+	return l.parse(tag, 0, placeholders)
 }
 
-func (l myLocaleInt) NewFromTag(lang language.Tag, placeholders MyLocaleIntPlaceholders) string {
-	return l.new(lang, 0, placeholders)
+func (l myLocaleInt) FromTag(lang language.Tag, placeholders MyLocaleIntPlaceholders) string {
+	return l.parse(lang, 0, placeholders)
+}
+
+func (l myLocaleInt) Locale(placeholders MyLocaleIntPlaceholders) Locale {
+	return Locale{locale: l, placeholders: placeholders}
 }
 
 type MyLocaleIntPlaceholders struct {
@@ -208,42 +283,49 @@ func (p MyLocaleIntPlaceholders) fr() []any {
 	return []any{p.Placeholder}
 }
 
-var myLocaleStrValue = myLocaleStr{
-	en: "myLocale %s",
-	fr: "myLocale %s fr",
+type myLocaleStr struct{}
+
+func (l myLocaleStr) en() string {
+	return "myLocale %s"
 }
 
-type myLocaleStr locale
+func (l myLocaleStr) fr() string {
+	return "myLocale %s fr"
+}
 
-func (l myLocaleStr) new(lang language.Tag, level int, placeholders MyLocaleStrPlaceholders) string {
+func (l myLocaleStr) parse(lang language.Tag, level int, placeholders MyLocaleStrPlaceholders) string {
 	if level == 1 {
 		lang, _, _ = Matcher.Match(lang)
 	}
 	switch lang {
 	case en:
-		return fmt.Sprintf(l.en, placeholders.en()...)
+		return fmt.Sprintf(l.en(), placeholders.en()...)
 	case fr:
-		return fmt.Sprintf(l.fr, placeholders.fr()...)
+		return fmt.Sprintf(l.fr(), placeholders.fr()...)
 	}
 	parent := lang
 	if level > 0 {
 		parent = lang.Parent()
 	}
-	return l.new(parent, level+1, placeholders)
+	return l.parse(parent, level+1, placeholders)
 }
 
-func (l myLocaleStr) New(ctx context.Context, placeholders MyLocaleStrPlaceholders) string {
+func (l myLocaleStr) FromCtx(ctx context.Context, placeholders MyLocaleStrPlaceholders) string {
 	lang, _ := lexigo.FromCtx(ctx)
-	return l.new(lang, 0, placeholders)
+	return l.parse(lang, 0, placeholders)
 }
 
-func (l myLocaleStr) NewFromString(lang string, placeholders MyLocaleStrPlaceholders) string {
+func (l myLocaleStr) FromString(lang string, placeholders MyLocaleStrPlaceholders) string {
 	tag, _ := language.Parse(lang)
-	return l.new(tag, 0, placeholders)
+	return l.parse(tag, 0, placeholders)
 }
 
-func (l myLocaleStr) NewFromTag(lang language.Tag, placeholders MyLocaleStrPlaceholders) string {
-	return l.new(lang, 0, placeholders)
+func (l myLocaleStr) FromTag(lang language.Tag, placeholders MyLocaleStrPlaceholders) string {
+	return l.parse(lang, 0, placeholders)
+}
+
+func (l myLocaleStr) Locale(placeholders MyLocaleStrPlaceholders) Locale {
+	return Locale{locale: l, placeholders: placeholders}
 }
 
 type MyLocaleStrPlaceholders struct {
@@ -258,42 +340,49 @@ func (p MyLocaleStrPlaceholders) fr() []any {
 	return []any{p.Placeholder}
 }
 
-var innerValue = inner{
-	en: "nested %s %v",
-	fr: "nested %v %s fr",
+type inner struct{}
+
+func (l inner) en() string {
+	return "nested %s %v"
 }
 
-type inner locale
+func (l inner) fr() string {
+	return "nested %v %s fr"
+}
 
-func (l inner) new(lang language.Tag, level int, placeholders InnerPlaceholders) string {
+func (l inner) parse(lang language.Tag, level int, placeholders InnerPlaceholders) string {
 	if level == 1 {
 		lang, _, _ = Matcher.Match(lang)
 	}
 	switch lang {
 	case en:
-		return fmt.Sprintf(l.en, placeholders.en()...)
+		return fmt.Sprintf(l.en(), placeholders.en()...)
 	case fr:
-		return fmt.Sprintf(l.fr, placeholders.fr()...)
+		return fmt.Sprintf(l.fr(), placeholders.fr()...)
 	}
 	parent := lang
 	if level > 0 {
 		parent = lang.Parent()
 	}
-	return l.new(parent, level+1, placeholders)
+	return l.parse(parent, level+1, placeholders)
 }
 
-func (l inner) New(ctx context.Context, placeholders InnerPlaceholders) string {
+func (l inner) FromCtx(ctx context.Context, placeholders InnerPlaceholders) string {
 	lang, _ := lexigo.FromCtx(ctx)
-	return l.new(lang, 0, placeholders)
+	return l.parse(lang, 0, placeholders)
 }
 
-func (l inner) NewFromString(lang string, placeholders InnerPlaceholders) string {
+func (l inner) FromString(lang string, placeholders InnerPlaceholders) string {
 	tag, _ := language.Parse(lang)
-	return l.new(tag, 0, placeholders)
+	return l.parse(tag, 0, placeholders)
 }
 
-func (l inner) NewFromTag(lang language.Tag, placeholders InnerPlaceholders) string {
-	return l.new(lang, 0, placeholders)
+func (l inner) FromTag(lang language.Tag, placeholders InnerPlaceholders) string {
+	return l.parse(lang, 0, placeholders)
+}
+
+func (l inner) Locale(placeholders InnerPlaceholders) Locale {
+	return Locale{locale: l, placeholders: placeholders}
 }
 
 type InnerPlaceholders struct {
@@ -309,13 +398,13 @@ func (p InnerPlaceholders) fr() []any {
 	return []any{p.Placeholder2, p.Placeholder1}
 }
 
-var outerValue = outer{Inner: innerValue}
+var outerValue = outer{Inner: inner{}}
 
 type outer struct {
 	Inner inner
 }
 
-var Locales = locales{MyLocale: myLocaleValue, MyLocaleAny: myLocaleAnyValue, MyLocaleFloat: myLocaleFloatValue, MyLocaleInt: myLocaleIntValue, MyLocaleStr: myLocaleStrValue, Outer: outerValue}
+var Locales = locales{MyLocale: myLocale{}, MyLocaleAny: myLocaleAny{}, MyLocaleFloat: myLocaleFloat{}, MyLocaleInt: myLocaleInt{}, MyLocaleStr: myLocaleStr{}, Outer: outer{}}
 
 type locales struct {
 	MyLocale      myLocale

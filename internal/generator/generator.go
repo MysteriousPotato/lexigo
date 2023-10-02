@@ -118,10 +118,130 @@ func NewGenerator(w io.Writer, params Params) (*Generator, error) {
 		return nil, err
 	}
 
-	if err := g.newStructTypeFunc("locale", func(group *jen.Group) {
+	if err := jen.Type().Id("locale").InterfaceFunc(func(group *jen.Group) {
 		for _, lang := range languages {
-			group.Add(jen.Id(lang.String()).String())
+			group.Add(jen.Id(lang.String()).Call().String())
 		}
+	}).Render(g.writer); err != nil {
+		return nil, err
+	}
+
+	if err := jen.Type().Id("placeholders").InterfaceFunc(func(group *jen.Group) {
+		for _, lang := range languages {
+			group.Add(jen.Id(lang.String()).Call().Index().Any())
+		}
+	}).Render(g.writer); err != nil {
+		return nil, err
+	}
+
+	if err := g.newStructType("Locale", jen.Statement{
+		jen.Id("locale").Id("locale"),
+		jen.Id("placeholders").Id("placeholders"),
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := g.newMethod(method{
+		Alias: "l",
+		Type:  "Locale",
+		Name:  "parse",
+		Params: jen.Statement{
+			jen.CustomFunc(jen.Options{Separator: ","}, func(group *jen.Group) {
+				group.Add(jen.Id("lang").Qual("golang.org/x/text/language", "Tag"))
+				group.Add(jen.Id("level").Int())
+			}),
+		},
+		ReturnTypes: jen.Statement{jen.String()},
+		Body: jen.Statement{
+			jen.If(jen.Id("level").Op("==").Lit(1)).Block(
+				jen.Id("lang, _, _").Op("=").Id("Matcher.Match(lang)"),
+			),
+			jen.Switch(jen.Id("lang")).BlockFunc(func(group *jen.Group) {
+				for _, tag := range g.languages {
+					group.Add(jen.Case(jen.Id(tag.String())).Block(
+						jen.If(jen.Id("l").Dot("placeholders").Op("==").Nil()).Block(
+							jen.Return(jen.Id("l").Dot("locale").Dot(tag.String()).Call()),
+						),
+						jen.Return(
+							jen.Qual("fmt", "Sprintf").Call(
+								jen.Id("l").Dot("locale").Dot(tag.String()).Call(),
+								jen.Id("l").Dot("placeholders").Dot(tag.String()).Call().Op("..."),
+							),
+						),
+					))
+				}
+			}),
+			jen.Id("parent").Op(":=").Id("lang"),
+			jen.If(jen.Id("level").Op(">").Lit(0)).Block(
+				jen.Id("parent").Op("=").Id("lang").Dot("Parent").Call(),
+			),
+			jen.Return(jen.Id("l").Dot("parse").CallFunc(func(group *jen.Group) {
+				group.Add(jen.Id("parent"))
+				group.Add(jen.Id("level+1"))
+			})),
+		},
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := g.newMethod(method{
+		Alias: "l",
+		Type:  "Locale",
+		Name:  "FromCtx",
+		Params: jen.Statement{
+			jen.CustomFunc(jen.Options{Separator: ","}, func(group *jen.Group) {
+				group.Add(jen.Id("ctx").Qual("context", "Context"))
+			}),
+		},
+		ReturnTypes: jen.Statement{jen.String()},
+		Body: jen.Statement{
+			jen.List(jen.Id("lang"), jen.Id("_")).Op(":=").Qual("github.com/MysteriousPotato/lexigo", "FromCtx").Call(jen.Id("ctx")),
+			jen.Return(jen.Id("l").Dot("parse").CallFunc(func(group *jen.Group) {
+				group.Add(jen.Id("lang"))
+				group.Add(jen.Lit(0))
+			})),
+		},
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := g.newMethod(method{
+		Alias: "l",
+		Type:  "Locale",
+		Name:  "FromString",
+		Params: jen.Statement{
+			jen.CustomFunc(jen.Options{Separator: ","}, func(group *jen.Group) {
+				group.Add(jen.Id("lang").String())
+			}),
+		},
+		ReturnTypes: jen.Statement{jen.String()},
+		Body: jen.Statement{
+			jen.List(jen.Id("tag"), jen.Id("_")).Op(":=").Qual("golang.org/x/text/language", "Parse").Call(jen.Id("lang")),
+			jen.Return(jen.Id("l").Dot("parse").CallFunc(func(group *jen.Group) {
+				group.Add(jen.Id("tag"))
+				group.Add(jen.Lit(0))
+			})),
+		},
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := g.newMethod(method{
+		Alias: "l",
+		Type:  "Locale",
+		Name:  "FromTag",
+		Params: jen.Statement{
+			jen.CustomFunc(jen.Options{Separator: ","}, func(group *jen.Group) {
+				group.Add(jen.Id("lang").Qual("golang.org/x/text/language", "Tag"))
+			}),
+		},
+		ReturnTypes: jen.Statement{jen.String()},
+		Body: jen.Statement{
+			jen.Return(jen.Id("l").Dot("parse").CallFunc(func(group *jen.Group) {
+				group.Add(jen.Id("lang"))
+				group.Add(jen.Lit(0))
+			})),
+		},
 	}); err != nil {
 		return nil, err
 	}
@@ -179,9 +299,9 @@ func (g *Generator) newNestedLocale(fieldName, namespace string, valueOf reflect
 		if err := g.exec(eleFieldName, extendNamespace(namespace, eleFieldName)); err != nil {
 			return err
 		}
-		eleFieldName, eleTypeName, eleValueName, _ := getNames(eleFieldName)
+		eleFieldName, eleTypeName, _, _ := getNames(eleFieldName)
 
-		valueCodes.Add(jen.Id(eleFieldName).Op(":").Id(eleValueName))
+		valueCodes.Add(jen.Id(eleFieldName).Op(":").Id(eleTypeName + "{}"))
 		typeCodes.Add(jen.Id(eleFieldName).Id(eleTypeName))
 	}
 
@@ -196,15 +316,18 @@ func (g *Generator) newNestedLocale(fieldName, namespace string, valueOf reflect
 }
 
 func (g *Generator) newLocale(fieldName, namespace, locale string) error {
-	fieldName, typeName, valueName, placeholdersType := getNames(fieldName)
+	fieldName, typeName, _, placeholdersType := getNames(fieldName)
 
 	_, placeholders, err := extractPlaceholders(locale)
 	if err != nil {
 		return err
 	}
 
+	if err := g.newType(typeName, "struct {}"); err != nil {
+		return err
+	}
+
 	langPlaceholdersMap := make(map[language.Tag][]field, len(g.languagesMaps))
-	valueCodes := make(jen.Statement, len(g.languagesMaps))
 	langSwitchCodes := make(jen.Statement, len(g.languagesMaps))
 	for _, tag := range g.languages {
 		lang := g.languagesMaps[tag]
@@ -232,33 +355,38 @@ func (g *Generator) newLocale(fieldName, namespace, locale string) error {
 			}
 		}
 
+		if err := jen.
+			Func().
+			Params(jen.Id("l").Id(typeName)).
+			Id(tag.String()).
+			Call().
+			String().
+			Block(jen.Return(jen.Lit(localeStr))).
+			Render(g.writer); err != nil {
+			return err
+		}
+
 		langPlaceholdersMap[tag] = langPlaceholders
-		valueCodes.Add(jen.Id(tag.String()).Op(":").Lit(localeStr).Op(","))
 		langSwitchCodes.Add(jen.Case(jen.Id(tag.String())).Block(
-			jen.Return(
-				jen.Qual("fmt", "Sprintf").CallFunc(func(group *jen.Group) {
-					group.Add(jen.Id("l").Dot(tag.String()))
-					if placeholders != nil {
-						group.Add(jen.Id("placeholders").Dot(tag.String()).Call().Op("..."))
-					}
-				}),
-			),
+			jen.ReturnFunc(func(group *jen.Group) {
+				if placeholders == nil {
+					group.Add(jen.Id("l").Dot(tag.String()).Call())
+					return
+				}
+
+				group.Add(jen.Qual("fmt", "Sprintf").Call(
+					jen.Id("l").Dot(tag.String()).Call(),
+					jen.Id("placeholders").Dot(tag.String()).Call().Op("..."),
+				))
+			}),
 		))
-	}
-
-	if err := jen.Var().Id(valueName).Op("=").Id(typeName).Block(valueCodes...).Render(g.writer); err != nil {
-		return err
-	}
-
-	if err := g.newType(typeName, "locale"); err != nil {
-		return err
 	}
 
 	if err := g.newMethod(method{
 		Alias: "l",
 		Type:  typeName,
-		Name:  "new",
-		Params: []jen.Code{
+		Name:  "parse",
+		Params: jen.Statement{
 			jen.CustomFunc(jen.Options{Separator: ","}, func(group *jen.Group) {
 				group.Add(jen.Id("lang").Qual("golang.org/x/text/language", "Tag"))
 				group.Add(jen.Id("level").Int())
@@ -267,8 +395,8 @@ func (g *Generator) newLocale(fieldName, namespace, locale string) error {
 				}
 			}),
 		},
-		ReturnTypes: []jen.Code{jen.String()},
-		Body: []jen.Code{
+		ReturnTypes: jen.Statement{jen.String()},
+		Body: jen.Statement{
 			jen.If(jen.Id("level").Op("==").Lit(1)).Block(
 				jen.Id("lang, _, _").Op("=").Id("Matcher.Match(lang)"),
 			),
@@ -277,7 +405,7 @@ func (g *Generator) newLocale(fieldName, namespace, locale string) error {
 			jen.If(jen.Id("level").Op(">").Lit(0)).Block(
 				jen.Id("parent").Op("=").Id("lang").Dot("Parent").Call(),
 			),
-			jen.Return(jen.Id("l").Dot("new").CallFunc(func(group *jen.Group) {
+			jen.Return(jen.Id("l").Dot("parse").CallFunc(func(group *jen.Group) {
 				group.Add(jen.Id("parent"))
 				group.Add(jen.Id("level+1"))
 				if placeholders != nil {
@@ -292,8 +420,8 @@ func (g *Generator) newLocale(fieldName, namespace, locale string) error {
 	if err := g.newMethod(method{
 		Alias: "l",
 		Type:  typeName,
-		Name:  "New",
-		Params: []jen.Code{
+		Name:  "FromCtx",
+		Params: jen.Statement{
 			jen.CustomFunc(jen.Options{Separator: ","}, func(group *jen.Group) {
 				group.Add(jen.Id("ctx").Qual("context", "Context"))
 				if placeholders != nil {
@@ -301,10 +429,10 @@ func (g *Generator) newLocale(fieldName, namespace, locale string) error {
 				}
 			}),
 		},
-		ReturnTypes: []jen.Code{jen.String()},
-		Body: []jen.Code{
+		ReturnTypes: jen.Statement{jen.String()},
+		Body: jen.Statement{
 			jen.List(jen.Id("lang"), jen.Id("_")).Op(":=").Qual("github.com/MysteriousPotato/lexigo", "FromCtx").Call(jen.Id("ctx")),
-			jen.Return(jen.Id("l").Dot("new").CallFunc(func(group *jen.Group) {
+			jen.Return(jen.Id("l").Dot("parse").CallFunc(func(group *jen.Group) {
 				group.Add(jen.Id("lang"))
 				group.Add(jen.Lit(0))
 				if placeholders != nil {
@@ -319,8 +447,8 @@ func (g *Generator) newLocale(fieldName, namespace, locale string) error {
 	if err := g.newMethod(method{
 		Alias: "l",
 		Type:  typeName,
-		Name:  "NewFromString",
-		Params: []jen.Code{
+		Name:  "FromString",
+		Params: jen.Statement{
 			jen.CustomFunc(jen.Options{Separator: ","}, func(group *jen.Group) {
 				group.Add(jen.Id("lang").String())
 				if placeholders != nil {
@@ -328,10 +456,10 @@ func (g *Generator) newLocale(fieldName, namespace, locale string) error {
 				}
 			}),
 		},
-		ReturnTypes: []jen.Code{jen.String()},
-		Body: []jen.Code{
+		ReturnTypes: jen.Statement{jen.String()},
+		Body: jen.Statement{
 			jen.List(jen.Id("tag"), jen.Id("_")).Op(":=").Qual("golang.org/x/text/language", "Parse").Call(jen.Id("lang")),
-			jen.Return(jen.Id("l").Dot("new").CallFunc(func(group *jen.Group) {
+			jen.Return(jen.Id("l").Dot("parse").CallFunc(func(group *jen.Group) {
 				group.Add(jen.Id("tag"))
 				group.Add(jen.Lit(0))
 				if placeholders != nil {
@@ -346,8 +474,8 @@ func (g *Generator) newLocale(fieldName, namespace, locale string) error {
 	if err := g.newMethod(method{
 		Alias: "l",
 		Type:  typeName,
-		Name:  "NewFromTag",
-		Params: []jen.Code{
+		Name:  "FromTag",
+		Params: jen.Statement{
 			jen.CustomFunc(jen.Options{Separator: ","}, func(group *jen.Group) {
 				group.Add(jen.Id("lang").Qual("golang.org/x/text/language", "Tag"))
 				if placeholders != nil {
@@ -355,13 +483,36 @@ func (g *Generator) newLocale(fieldName, namespace, locale string) error {
 				}
 			}),
 		},
-		ReturnTypes: []jen.Code{jen.String()},
-		Body: []jen.Code{
-			jen.Return(jen.Id("l").Dot("new").CallFunc(func(group *jen.Group) {
+		ReturnTypes: jen.Statement{jen.String()},
+		Body: jen.Statement{
+			jen.Return(jen.Id("l").Dot("parse").CallFunc(func(group *jen.Group) {
 				group.Add(jen.Id("lang"))
 				group.Add(jen.Lit(0))
 				if placeholders != nil {
 					group.Add(jen.Id("placeholders"))
+				}
+			})),
+		},
+	}); err != nil {
+		return err
+	}
+
+	var localeMethodParams *jen.Statement
+	if placeholders != nil {
+		localeMethodParams = jen.Id("placeholders").Id(placeholdersType)
+	}
+
+	if err := g.newMethod(method{
+		Alias:       "l",
+		Type:        typeName,
+		Name:        "Locale",
+		Params:      jen.Statement{localeMethodParams},
+		ReturnTypes: jen.Statement{jen.Id("Locale")},
+		Body: jen.Statement{
+			jen.Return(jen.Id("Locale").ValuesFunc(func(group *jen.Group) {
+				group.Add(jen.Id("locale").Op(": ").Id("l"))
+				if placeholders != nil {
+					group.Add(jen.Id("placeholders").Op(": ").Id("placeholders"))
 				}
 			})),
 		},
@@ -380,8 +531,8 @@ func (g *Generator) newLocale(fieldName, namespace, locale string) error {
 				Alias:       "p",
 				Type:        placeholdersType,
 				Name:        tag.String(),
-				ReturnTypes: []jen.Code{jen.Index().Any()},
-				Body: []jen.Code{
+				ReturnTypes: jen.Statement{jen.Index().Any()},
+				Body: jen.Statement{
 					jen.Return(jen.Index().Any().ValuesFunc(func(group *jen.Group) {
 						for _, p := range langPlaceholders {
 							group.Add(jen.Id("p").Dot(p.Name))
@@ -401,7 +552,7 @@ func (g *Generator) newType(name string, subType string) error {
 	return jen.Type().Id(name).Id(subType).Render(g.writer)
 }
 
-func (g *Generator) newStructType(name string, fields []jen.Code) error {
+func (g *Generator) newStructType(name string, fields jen.Statement) error {
 	return jen.Type().Id(name).Struct(fields...).Render(g.writer)
 }
 
@@ -409,7 +560,7 @@ func (g *Generator) newStructTypeFunc(name string, fn func(*jen.Group)) error {
 	return jen.Type().Id(name).StructFunc(fn).Render(g.writer)
 }
 
-func (g *Generator) newStructInstance(name, typeName string, fields []jen.Code) error {
+func (g *Generator) newStructInstance(name, typeName string, fields jen.Statement) error {
 	return jen.Var().Id(name).Op("=").Id(typeName).Values(fields...).Render(g.writer)
 }
 
@@ -417,9 +568,9 @@ type method struct {
 	Alias       string
 	Type        string
 	Name        string
-	Params      []jen.Code
-	ReturnTypes []jen.Code
-	Body        []jen.Code
+	Params      jen.Statement
+	ReturnTypes jen.Statement
+	Body        jen.Statement
 }
 
 func (g *Generator) newMethod(method method) error {

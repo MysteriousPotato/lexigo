@@ -101,7 +101,7 @@ func main() {
         Statement: "hate",
     })
     fmt.Println(myLocale.FromTag(language.English))
-    fmt.Println(myLocale.FromTag(language.German)
+    fmt.Println(myLocale.FromTag(language.German))
 	
     // You can manually inject the language into the context for using "New"
     ctx := lexigo.WithLanguage(ctx, language.English) 

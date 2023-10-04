@@ -15,11 +15,11 @@ func assert(t *testing.T, expected, got string) {
 
 func TestLocales(t *testing.T) {
 	t.Run("no placeholder", func(t *testing.T) {
-		assert(t, "myLocale", Locales.MyLocale.FromTag(language.English))
+		assert(t, "myLocale %", Locales.MyLocale.FromTag(language.English))
 	})
 
 	t.Run("with placeholder", func(t *testing.T) {
-		assert(t, "myLocale \"test\"", Locales.MyLocaleStr.FromTag(
+		assert(t, "myLocale % \"test\"", Locales.MyLocaleStr.FromTag(
 			language.English,
 			MyLocaleStrPlaceholders{
 				Placeholder: "test",
@@ -90,19 +90,19 @@ func TestLocales(t *testing.T) {
 
 	t.Run("from ctx", func(t *testing.T) {
 		ctx := lexigo.WithLanguage(context.Background(), language.French)
-		assert(t, "myLocale fr", Locales.MyLocale.FromCtx(ctx))
+		assert(t, "myLocale % fr", Locales.MyLocale.FromCtx(ctx))
 	})
 
 	t.Run("from string", func(t *testing.T) {
-		assert(t, "myLocale fr", Locales.MyLocale.FromString("fr"))
+		assert(t, "myLocale % fr", Locales.MyLocale.FromString("fr"))
 	})
 
 	t.Run("using Locale", func(t *testing.T) {
-		assert(t, "myLocale fr", Locales.MyLocale.Locale().FromTag(language.French))
+		assert(t, "myLocale % fr", Locales.MyLocale.Locale().FromTag(language.French))
 	})
 
 	t.Run("using Locale with placeholders", func(t *testing.T) {
-		assert(t, "myLocale \"test\" fr", Locales.MyLocaleStr.
+		assert(t, "myLocale % \"test\" fr", Locales.MyLocaleStr.
 			Locale(MyLocaleStrPlaceholders{Placeholder: "test"}).
 			FromTag(language.French),
 		)

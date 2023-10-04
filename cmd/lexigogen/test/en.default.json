@@ -1,6 +1,6 @@
 {
-  "myLocale": "myLocale",
-  "myLocaleStr": "myLocale {{.Placeholder:string(%q)}}",
+  "myLocale": "myLocale %",
+  "myLocaleStr": "myLocale % {{.Placeholder:string(%q)}}",
   "myLocaleInt": "myLocale {{.Placeholder:int}}",
   "myLocaleFloat": "myLocale {{.Placeholder:float32(%.2f)}}",
   "myLocaleAny": "myLocale {{.Placeholder:any(%+v)}}",

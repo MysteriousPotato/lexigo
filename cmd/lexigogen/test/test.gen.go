@@ -70,11 +70,11 @@ func (l Locale) FromTag(lang language.Tag) string {
 type myLocale struct{}
 
 func (l myLocale) en() string {
-	return "myLocale"
+	return "myLocale %"
 }
 
 func (l myLocale) fr() string {
-	return "myLocale fr"
+	return "myLocale % fr"
 }
 
 func (l myLocale) parse(lang language.Tag, level int) string {
@@ -286,11 +286,11 @@ func (p MyLocaleIntPlaceholders) fr() []any {
 type myLocaleStr struct{}
 
 func (l myLocaleStr) en() string {
-	return "myLocale %q"
+	return "myLocale %% %q"
 }
 
 func (l myLocaleStr) fr() string {
-	return "myLocale %q fr"
+	return "myLocale %% %q fr"
 }
 
 func (l myLocaleStr) parse(lang language.Tag, level int, placeholders MyLocaleStrPlaceholders) string {

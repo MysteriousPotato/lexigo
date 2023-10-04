@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"slices"
 	"strings"
 
@@ -18,8 +17,6 @@ import (
 
 	"github.com/dave/jennifer/jen"
 )
-
-var placeholderMatcher = regexp.MustCompile(`{{\.(\S+)}}`)
 
 type (
 	Generator struct {

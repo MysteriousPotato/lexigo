@@ -2,8 +2,12 @@ package generator
 
 import (
 	"fmt"
+	"regexp"
+	"slices"
 	"strings"
 )
+
+var placeholderMatcher = regexp.MustCompile(`{{\.(\S+)}}`)
 
 func toPascalCase(str string) string {
 	return strings.ToUpper(str[:1]) + str[1:]
@@ -15,7 +19,12 @@ func toCamelCase(str string) string {
 
 func extractPlaceholders(str string) (string, fields, error) {
 	matches := placeholderMatcher.FindAllStringSubmatch(str, -1)
-	var placeholders []field
+	var placeholders fields
+
+	if len(matches) > 0 {
+		str = escapePercentChars(str)
+		slices.Grow(placeholders, len(matches)-1)
+	}
 
 	for _, match := range matches {
 		if len(match) == 0 {
@@ -45,6 +54,43 @@ func extractPlaceholders(str string) (string, fields, error) {
 	}
 
 	return str, placeholders, nil
+}
+
+func escapePercentChars(s string) string {
+	var indexes []int
+	var isPlaceholder bool
+	for i := 0; i < len(s); i++ {
+		if !isPlaceholder && len(s) > i+1 && s[i:i+2] == "{{" {
+			isPlaceholder = true
+			i++
+			continue
+		}
+		if isPlaceholder && len(s) > i+1 && s[i:i+2] == "}}" {
+			isPlaceholder = false
+			i++
+			continue
+		}
+
+		if !isPlaceholder && s[i] == '%' {
+			indexes = append(indexes, i)
+		}
+	}
+
+	b := make([]byte, len(s)+len(indexes))
+	var lastInsert int
+	for i, idx := range indexes {
+		var lastIdx int
+		if i > 0 {
+			lastIdx = indexes[i-1]
+		}
+
+		copy(b[lastIdx+i:idx+i+1], s[lastIdx:idx+1])
+		b[idx+i+1] = '%'
+		lastInsert = idx + 1
+	}
+	copy(b[lastInsert+len(indexes):], s[lastInsert:])
+
+	return string(b)
 }
 
 func extendNamespace(namespace, key string) string {

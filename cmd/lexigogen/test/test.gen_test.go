@@ -9,7 +9,7 @@ import (
 
 func assert(t *testing.T, expected, got string) {
 	if expected != got {
-		t.Errorf("expected '%s', got '%s'", expected, got)
+		t.Errorf("expected %q, got %q", expected, got)
 	}
 }
 
@@ -19,7 +19,7 @@ func TestLocales(t *testing.T) {
 	})
 
 	t.Run("with placeholder", func(t *testing.T) {
-		assert(t, "myLocale test", Locales.MyLocaleStr.FromTag(
+		assert(t, "myLocale \"test\"", Locales.MyLocaleStr.FromTag(
 			language.English,
 			MyLocaleStrPlaceholders{
 				Placeholder: "test",
@@ -33,7 +33,7 @@ func TestLocales(t *testing.T) {
 			},
 		))
 
-		assert(t, "myLocale 10.000000", Locales.MyLocaleFloat.FromTag(
+		assert(t, "myLocale 10.00", Locales.MyLocaleFloat.FromTag(
 			language.English,
 			MyLocaleFloatPlaceholders{
 				Placeholder: 10.0,
@@ -53,7 +53,7 @@ func TestLocales(t *testing.T) {
 			language.English,
 			InnerPlaceholders{
 				Placeholder1: "test1",
-				Placeholder2: 10,
+				Placeholder2: "10",
 			},
 		))
 	})
@@ -63,7 +63,7 @@ func TestLocales(t *testing.T) {
 			language.French,
 			InnerPlaceholders{
 				Placeholder1: "test1",
-				Placeholder2: 10,
+				Placeholder2: "10",
 			},
 		))
 	})
@@ -73,7 +73,7 @@ func TestLocales(t *testing.T) {
 			language.German,
 			InnerPlaceholders{
 				Placeholder1: "test1",
-				Placeholder2: 10,
+				Placeholder2: "10",
 			},
 		))
 	})
@@ -83,7 +83,7 @@ func TestLocales(t *testing.T) {
 			language.BritishEnglish,
 			InnerPlaceholders{
 				Placeholder1: "test1",
-				Placeholder2: 10,
+				Placeholder2: "10",
 			},
 		))
 	})
@@ -102,7 +102,7 @@ func TestLocales(t *testing.T) {
 	})
 
 	t.Run("using Locale with placeholders", func(t *testing.T) {
-		assert(t, "myLocale test fr", Locales.MyLocaleStr.
+		assert(t, "myLocale \"test\" fr", Locales.MyLocaleStr.
 			Locale(MyLocaleStrPlaceholders{Placeholder: "test"}).
 			FromTag(language.French),
 		)

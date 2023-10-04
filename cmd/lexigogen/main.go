@@ -53,12 +53,17 @@ func main() {
 	}
 
 	defer func() {
-		if reason, ok := recover().(error); ok {
+		if reason := recover(); reason != nil {
+			reasonErr, ok := reason.(error)
+			if !ok {
+				reasonErr = fmt.Errorf("%v", reasonErr)
+			}
+
 			if err := os.Remove(out.Name()); err != nil {
-				log.Fatal(errors.Join(reason, err))
+				log.Fatal(errors.Join(reasonErr, err))
 			}
 			if err := out.Close(); err != nil {
-				log.Fatal(errors.Join(reason, err))
+				log.Fatal(errors.Join(reasonErr, err))
 			}
 			log.Fatal(reason, string(debug.Stack()))
 		}

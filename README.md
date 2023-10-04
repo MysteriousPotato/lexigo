@@ -10,42 +10,48 @@ Lexigo is still in the early stage of development, expect breaking changes.
 
 #### Codegen: 
 ```bash
-go install github.com/MysteriousPotato/lexigo/cmd/lexigogen@v0.2.0
+go install github.com/MysteriousPotato/lexigo/cmd/lexigogen@v0.3.0
 ```
 
 #### Library:
 ```bash
-go get github.com/MysteriousPotato/lexigo/pkg@v0.2.0
+go get github.com/MysteriousPotato/lexigo/pkg@v0.3.0
 ```
 
 ## Usage
 
 ### 1. Define your locales
 - Currently only supports json files
-- File names must be valid language codes Ex:. en.json, en_US.json
+- File names must be valid BCP 47 language tags Ex:. en.json, en-US.json
 - All locale files must be under the same directory. Lexigo looks up the directory recursively, so you can structure the directory however you like.
 - Only one file must have the "default" suffix in its name Ex.: en.default.json. Lexigo will use the default language as a reference for other languages.
 
-#### ./src/en.default.json:
+
+#### You can nest locales:
 ```
 {
-  // You can nest locales
   "vegetables": {
     "potato": "Potato",
     "zucchini": "Zucchini"
   },
-  // You can define placeholders similarly to templates
-  // You can also specify a format, in which case lexigo will infer the type if possible.
-  // Lexigo uses "fmt" under the hood so specifiers will result in the same format.
-  //
-  // Currently supported formats and their type:
-  //  - %v: any
-  //  - %s, %q: string
-  //  - %d, %b, %o, %x, %X: int64
-  //  - %f, %g, %e: float64
-  //
-  // The default specifier is "%s"
-  "potatoStatement": "I {{.Statement:%s}} potato"
+}
+```
+
+#### You can define placeholders similarly to templates:
+```
+{
+    "potatoStatement": "I {{.Statement}} potato",
+}
+```
+
+
+##### You can also specify a type and a format.
+
+Lexigo uses [fmt](https://pkg.go.dev/fmt) under the hood so refer to it for verbs.
+When omitted, the default type and verb are `string` and `%s`
+```
+{
+    "potatoStatement": "I {{.Statement:[]byte(%q)}} potato",
 }
 ```
 
@@ -69,7 +75,7 @@ Ex.:
  lexigogen -p ./src -o ./mypkg/locales.gen.go -pkg mypkg 
  ```
 
-### Or
+#### ***Or***
 Using go generate:
 ```go
 package mypkg
@@ -117,6 +123,13 @@ func main() {
 }
 ```
 
+## Roadmap
+
+- Adding currency support
+- Adding genderization support
+- Adding pluralization support
+- Adding `time.Time` support
+
 
 ## Contributing
 
@@ -127,4 +140,4 @@ Please make sure to update tests as appropriate.
 
 ## License
 
-[MIT](https://github.com/MysteriousPotato/lexigo/LICENSE)
+[MIT](https://github.com/MysteriousPotato/lexigo/blob/main/LICENSE)

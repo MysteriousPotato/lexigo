@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -13,6 +14,7 @@ import (
 	"strings"
 
 	"golang.org/x/text/language"
+	"golang.org/x/text/language/display"
 
 	"github.com/dave/jennifer/jen"
 )
@@ -33,9 +35,12 @@ type (
 )
 
 func NewGenerator(w io.Writer, params Params) (*Generator, error) {
+	log.Printf("Starting Lexigo generator from src %q", params.SrcPath)
+
 	var defaultLang language.Tag
 	var languages []language.Tag
 	languagesSrc := map[language.Tag][]byte{}
+	var languagesDisplayNames []string
 	if err := filepath.Walk(params.SrcPath, func(path string, info fs.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
@@ -48,7 +53,15 @@ func NewGenerator(w io.Writer, params Params) (*Generator, error) {
 				return fmt.Errorf("failed to parse language from file name: %s: %w", info.Name(), err)
 			}
 
+			displayName := display.English.Languages().Name(tag)
+			languagesDisplayNames = append(languagesDisplayNames, displayName)
+
+			log.Printf("Found language file %q for %q", path, displayName)
 			if seg[1] == "default" {
+				if defaultLang != (language.Tag{}) {
+					return fmt.Errorf("found 2 or more default language files")
+				}
+				log.Printf("Setting default language to %q", displayName)
 				defaultLang = tag
 			}
 
@@ -64,8 +77,10 @@ func NewGenerator(w io.Writer, params Params) (*Generator, error) {
 	}
 
 	if len(languagesSrc) == 0 {
-		return nil, fmt.Errorf("no locale file found in %s", params.SrcPath)
+		return nil, fmt.Errorf("no locale file found")
 	}
+
+	log.Printf("Found %d locale files - %v", len(languagesDisplayNames), languagesDisplayNames)
 
 	maps := make(map[language.Tag]languageMap, len(languagesSrc))
 	for _, lang := range languages {
@@ -254,10 +269,14 @@ func (g *Generator) Exec(fieldName string) error {
 }
 
 func (g *Generator) exec(fieldName, namespace string) error {
+	if namespace != "" {
+		log.Printf("Generating %q locale", namespace)
+	}
+
 	langData := g.languagesMaps[g.defaultLang]
 	nsData, err := langData.get(namespace)
 	if err != nil {
-		return fmt.Errorf("invalid namespace '%s' for '%s' locale file: %w", namespace, g.defaultLang.String(), err)
+		return fmt.Errorf("invalid namespace %q for %q locale file: %w", namespace, g.defaultLang.String(), err)
 	}
 
 	valueOf := reflect.ValueOf(nsData)
@@ -267,7 +286,7 @@ func (g *Generator) exec(fieldName, namespace string) error {
 	case reflect.String:
 		return g.newLocale(fieldName, namespace, nsData.(string))
 	default:
-		return fmt.Errorf("unsupported type '%s' in locales file", valueOf.Type())
+		return fmt.Errorf("unsupported type %q in locales file", valueOf.Type())
 	}
 }
 
@@ -322,7 +341,7 @@ func (g *Generator) newLocale(fieldName, namespace, locale string) error {
 
 	_, placeholders, err := extractPlaceholders(locale)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to extract placeholders from %q: %w", namespace, err)
 	}
 
 	if err := g.newType(typeName, "struct {}"); err != nil {
@@ -335,21 +354,27 @@ func (g *Generator) newLocale(fieldName, namespace, locale string) error {
 		lang := g.languagesMaps[tag]
 		locale, err := lang.get(namespace)
 		if err != nil {
-			return fmt.Errorf("invalid namespace '%s' for '%s' locale file: %w", namespace, tag.String(), err)
+			return fmt.Errorf("invalid namespace %q for %q locale file: %w", namespace, tag.String(), err)
 		}
 
 		localeStr, langPlaceholders, err := extractPlaceholders(locale.(string))
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to extract placeholders from %q: %w", namespace, err)
 		}
 
 		if len(placeholders) != len(langPlaceholders) {
-			return err
+			return fmt.Errorf(
+				"%q missmatched placeholders for %q file: expected %d placholders, got %d",
+				namespace,
+				tag.String(),
+				len(placeholders),
+				len(langPlaceholders),
+			)
 		}
 		for _, p := range placeholders {
 			if !slices.Contains(langPlaceholders, p) {
 				return fmt.Errorf(
-					"'%s' missmatched placeholders for '%s' file: missing or invalid type for '%s'",
+					"%q missmatched placeholders for %q file: missing or invalid type for %q",
 					namespace,
 					tag.String(),
 					p.Name,

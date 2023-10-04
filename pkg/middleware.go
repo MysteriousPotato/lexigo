@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-// LanguageMiddleware inserts the (language tag)[language.Tag] into the request context according to "Accept-Language" header
+// LanguageMiddleware inserts the language.Tag into the request context according to "Accept-Language" header
 //
 // Usage:
 //

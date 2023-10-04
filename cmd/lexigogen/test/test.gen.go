@@ -115,11 +115,11 @@ func (l myLocale) Locale() Locale {
 type myLocaleAny struct{}
 
 func (l myLocaleAny) en() string {
-	return "myLocale %v"
+	return "myLocale %+v"
 }
 
 func (l myLocaleAny) fr() string {
-	return "myLocale %v fr"
+	return "myLocale %+v fr"
 }
 
 func (l myLocaleAny) parse(lang language.Tag, level int, placeholders MyLocaleAnyPlaceholders) string {
@@ -172,11 +172,11 @@ func (p MyLocaleAnyPlaceholders) fr() []any {
 type myLocaleFloat struct{}
 
 func (l myLocaleFloat) en() string {
-	return "myLocale %f"
+	return "myLocale %.2f"
 }
 
 func (l myLocaleFloat) fr() string {
-	return "myLocale %f fr"
+	return "myLocale %.2f fr"
 }
 
 func (l myLocaleFloat) parse(lang language.Tag, level int, placeholders MyLocaleFloatPlaceholders) string {
@@ -215,7 +215,7 @@ func (l myLocaleFloat) Locale(placeholders MyLocaleFloatPlaceholders) Locale {
 }
 
 type MyLocaleFloatPlaceholders struct {
-	Placeholder float64
+	Placeholder float32
 }
 
 func (p MyLocaleFloatPlaceholders) en() []any {
@@ -233,7 +233,7 @@ func (l myLocaleInt) en() string {
 }
 
 func (l myLocaleInt) fr() string {
-	return "myLocale %d fr"
+	return "myLocale %d"
 }
 
 func (l myLocaleInt) parse(lang language.Tag, level int, placeholders MyLocaleIntPlaceholders) string {
@@ -272,7 +272,7 @@ func (l myLocaleInt) Locale(placeholders MyLocaleIntPlaceholders) Locale {
 }
 
 type MyLocaleIntPlaceholders struct {
-	Placeholder int64
+	Placeholder int
 }
 
 func (p MyLocaleIntPlaceholders) en() []any {
@@ -286,11 +286,11 @@ func (p MyLocaleIntPlaceholders) fr() []any {
 type myLocaleStr struct{}
 
 func (l myLocaleStr) en() string {
-	return "myLocale %s"
+	return "myLocale %q"
 }
 
 func (l myLocaleStr) fr() string {
-	return "myLocale %s fr"
+	return "myLocale %q fr"
 }
 
 func (l myLocaleStr) parse(lang language.Tag, level int, placeholders MyLocaleStrPlaceholders) string {
@@ -343,11 +343,11 @@ func (p MyLocaleStrPlaceholders) fr() []any {
 type inner struct{}
 
 func (l inner) en() string {
-	return "nested %s %v"
+	return "nested %s %s"
 }
 
 func (l inner) fr() string {
-	return "nested %v %s fr"
+	return "nested %s %s fr"
 }
 
 func (l inner) parse(lang language.Tag, level int, placeholders InnerPlaceholders) string {
@@ -387,7 +387,7 @@ func (l inner) Locale(placeholders InnerPlaceholders) Locale {
 
 type InnerPlaceholders struct {
 	Placeholder1 string
-	Placeholder2 any
+	Placeholder2 string
 }
 
 func (p InnerPlaceholders) en() []any {

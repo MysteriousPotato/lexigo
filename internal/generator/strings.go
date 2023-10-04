@@ -23,35 +23,23 @@ func extractPlaceholders(str string) (string, fields, error) {
 		}
 
 		for _, group := range match[1:] {
-			seg := strings.Split(group, ":%")
+			seg := strings.Split(group, ":")
 			fieldName := seg[0]
 
-			expr := "s"
-			if len(seg) > 1 {
-				expr = seg[1]
+			if len(seg) == 1 {
+				seg = append(seg, "")
 			}
 
-			var fieldType string
-			switch expr {
-			case "v":
-				fieldType = "any"
-				break
-			case "s", "q":
-				fieldType = "string"
-				break
-			case "d", "b", "o", "x", "X":
-				fieldType = "int64"
-			case "f", "g", "e":
-				fieldType = "float64"
-			default:
-				return "", nil, fmt.Errorf("unsupported format expression '%s'", expr)
+			f, err := formatFromStr(seg[1])
+			if err != nil {
+				return "", nil, fmt.Errorf("failed to parse format %q: %w", seg[1], err)
 			}
 
-			str = strings.Replace(str, match[0], "%"+expr, 1)
+			str = strings.Replace(str, match[0], f.verb, 1)
 
 			placeholders = append(placeholders, field{
 				Name: toPascalCase(fieldName),
-				Type: fieldType,
+				Type: f.typeStr,
 			})
 		}
 	}

@@ -1,10 +1,10 @@
 {
   "myLocale": "myLocale",
-  "myLocaleStr": "myLocale {{.Placeholder}}",
-  "myLocaleInt": "myLocale {{.Placeholder:%d}}",
-  "myLocaleFloat": "myLocale {{.Placeholder:%f}}",
-  "myLocaleAny": "myLocale {{.Placeholder:%v}}",
+  "myLocaleStr": "myLocale {{.Placeholder:string(%q)}}",
+  "myLocaleInt": "myLocale {{.Placeholder:int}}",
+  "myLocaleFloat": "myLocale {{.Placeholder:float32(%.2f)}}",
+  "myLocaleAny": "myLocale {{.Placeholder:any(%+v)}}",
   "outer": {
-    "inner": "nested {{.Placeholder1}} {{.Placeholder2:%v}}"
+    "inner": "nested {{.Placeholder1}} {{.Placeholder2}}"
   }
 }

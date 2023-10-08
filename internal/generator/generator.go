@@ -12,10 +12,11 @@ import (
 	"slices"
 	"strings"
 
-	"golang.org/x/text/language"
-	"golang.org/x/text/language/display"
+	"golang.org/x/tools/imports"
 
 	"github.com/dave/jennifer/jen"
+	"golang.org/x/text/language"
+	"golang.org/x/text/language/display"
 )
 
 type (
@@ -44,7 +45,7 @@ type method struct {
 	Body        jen.Statement
 }
 
-func NewGenerator(w io.Writer, params Params) (*Generator, error) {
+func NewGenerator(params Params) (*Generator, error) {
 	log.Printf("Starting Lexigo generator from src %q", params.SrcPath)
 
 	var defaultLang language.Tag
@@ -105,7 +106,7 @@ func NewGenerator(w io.Writer, params Params) (*Generator, error) {
 		languages:              languages,
 		languagesMaps:          maps,
 		defaultLang:            defaultLang,
-		writer:                 &writer{w},
+		writer:                 &writer{},
 		nestedLocalesMap:       map[string]*namespace{},
 		localesMap:             map[string]*namespace{},
 		localesConflicts:       map[string]struct{}{},
@@ -143,7 +144,7 @@ func NewGenerator(w io.Writer, params Params) (*Generator, error) {
 				group.Add(jen.Id(lang.String()))
 			}
 		})).
-		Render(w); err != nil {
+		Render(g.writer); err != nil {
 		return nil, err
 	}
 
@@ -278,17 +279,27 @@ func NewGenerator(w io.Writer, params Params) (*Generator, error) {
 	return g, nil
 }
 
-func (g *Generator) Exec(varName string) error {
+func (g *Generator) Exec(varName string) ([]byte, error) {
 	varName = toPascalCase(varName)
+
 	if err := g.parseLocales(&namespace{
 		fieldName: varName,
 		varName:   varName,
 		fieldType: toCamelCase(varName),
 	}); err != nil {
-		return err
+		return nil, err
 	}
 
-	return g.generate()
+	if err := g.generate(); err != nil {
+		return nil, err
+	}
+
+	buf, err := io.ReadAll(&g.writer.internal)
+	if err != nil {
+		return nil, err
+	}
+
+	return imports.Process("", buf, nil)
 }
 
 func (g *Generator) parseLocales(ns *namespace) error {

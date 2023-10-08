@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+	"github.com/MysteriousPotato/lexigo/cmd/lexigogen/test/other"
 	"github.com/MysteriousPotato/lexigo/pkg"
 	"golang.org/x/text/language"
 	"testing"
@@ -44,6 +45,13 @@ func TestLocales(t *testing.T) {
 			language.English,
 			MyLocaleAnyPlaceholders{
 				Placeholder: nil,
+			},
+		))
+
+		assert(t, "myLocale other", Locales.MyLocaleOther.FromTag(
+			language.English,
+			MyLocaleOtherPlaceholders{
+				Placeholder: other.Other("other"),
 			},
 		))
 	})

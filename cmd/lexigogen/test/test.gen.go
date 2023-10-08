@@ -4,7 +4,9 @@ package test
 import (
 	"context"
 	"fmt"
-	"github.com/MysteriousPotato/lexigo/pkg"
+
+	"github.com/MysteriousPotato/lexigo/cmd/lexigogen/test/other"
+	lexigo "github.com/MysteriousPotato/lexigo/pkg"
 	"golang.org/x/text/language"
 )
 
@@ -67,13 +69,14 @@ func (l Locale) FromTag(lang language.Tag) string {
 	return l.parse(lang, 0)
 }
 
-var Locales = localesNested{MyLocaleAny: myLocaleAnyLocale{}, MyLocaleFloat: myLocaleFloatLocale{}, MyLocaleInt: myLocaleIntLocale{}, MyLocale: myLocaleLocale{}, MyLocaleStr: myLocaleStrLocale{}, Outer1: outer1LocaleNested{}, Outer2: outer2LocaleNested{}, Outer3: outer3LocaleNested{}, Outer4: outer4LocaleNested{}, Outer5: outer5LocaleNested{}}
+var Locales = localesNested{MyLocaleAny: myLocaleAnyLocale{}, MyLocaleFloat: myLocaleFloatLocale{}, MyLocaleInt: myLocaleIntLocale{}, MyLocale: myLocaleLocale{}, MyLocaleOther: myLocaleOtherLocale{}, MyLocaleStr: myLocaleStrLocale{}, Outer1: outer1LocaleNested{}, Outer2: outer2LocaleNested{}, Outer3: outer3LocaleNested{}, Outer4: outer4LocaleNested{}, Outer5: outer5LocaleNested{}}
 
 type localesNested struct {
 	MyLocaleAny   myLocaleAnyLocale
 	MyLocaleFloat myLocaleFloatLocale
 	MyLocaleInt   myLocaleIntLocale
 	MyLocale      myLocaleLocale
+	MyLocaleOther myLocaleOtherLocale
 	MyLocaleStr   myLocaleStrLocale
 	Outer1        outer1LocaleNested
 	Outer2        outer2LocaleNested
@@ -332,6 +335,63 @@ func (l myLocaleLocale) FromTag(lang language.Tag) string {
 
 func (l myLocaleLocale) Locale() Locale {
 	return Locale{locale: l}
+}
+
+type myLocaleOtherLocale struct{}
+
+func (l myLocaleOtherLocale) en() string {
+	return "myLocale %v"
+}
+
+func (l myLocaleOtherLocale) fr() string {
+	return "myLocale %v fr"
+}
+
+func (l myLocaleOtherLocale) parse(lang language.Tag, level int, placeholders MyLocaleOtherPlaceholders) string {
+	if level == 1 {
+		lang, _, _ = Matcher.Match(lang)
+	}
+	switch lang {
+	case en:
+		return fmt.Sprintf(l.en(), placeholders.en()...)
+	case fr:
+		return fmt.Sprintf(l.fr(), placeholders.fr()...)
+	}
+	parent := lang
+	if level > 0 {
+		parent = lang.Parent()
+	}
+	return l.parse(parent, level+1, placeholders)
+}
+
+func (l myLocaleOtherLocale) FromCtx(ctx context.Context, placeholders MyLocaleOtherPlaceholders) string {
+	lang, _ := lexigo.FromCtx(ctx)
+	return l.parse(lang, 0, placeholders)
+}
+
+func (l myLocaleOtherLocale) FromString(lang string, placeholders MyLocaleOtherPlaceholders) string {
+	tag, _ := language.Parse(lang)
+	return l.parse(tag, 0, placeholders)
+}
+
+func (l myLocaleOtherLocale) FromTag(lang language.Tag, placeholders MyLocaleOtherPlaceholders) string {
+	return l.parse(lang, 0, placeholders)
+}
+
+func (l myLocaleOtherLocale) Locale(placeholders MyLocaleOtherPlaceholders) Locale {
+	return Locale{locale: l, placeholders: placeholders}
+}
+
+type MyLocaleOtherPlaceholders struct {
+	Placeholder other.Other
+}
+
+func (p MyLocaleOtherPlaceholders) en() []any {
+	return []any{p.Placeholder}
+}
+
+func (p MyLocaleOtherPlaceholders) fr() []any {
+	return []any{p.Placeholder}
 }
 
 type myLocaleStrLocale struct{}

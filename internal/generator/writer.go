@@ -1,14 +1,14 @@
 package generator
 
 import (
+	"bytes"
 	gofmt "go/format"
-	"io"
 )
 
 var lineBreak = []byte("\n")
 
 type writer struct {
-	internal io.Writer
+	internal bytes.Buffer
 }
 
 func (w *writer) Write(b []byte) (int, error) {

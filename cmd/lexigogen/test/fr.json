@@ -4,6 +4,7 @@
   "myLocaleInt": "myLocale {{.Placeholder:int}}",
   "myLocaleFloat": "myLocale {{.Placeholder:float32(%.2f)}} fr",
   "myLocaleAny": "myLocale {{.Placeholder:any(%+v)}} fr",
+  "myLocaleOther": "myLocale {{.Placeholder:other.Other}} fr",
   "outer1": {
     "inner": "nested 1 {{.Placeholder2}} {{.Placeholder1}} fr"
   },

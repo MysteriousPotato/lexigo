@@ -69,7 +69,7 @@ func main() {
 		}
 	}()
 
-	g, err := generator.NewGenerator(out, generator.Params{
+	g, err := generator.NewGenerator(generator.Params{
 		SrcPath: *srcPathFlag,
 		PkgName: *pkgNameFlag,
 	})
@@ -77,7 +77,12 @@ func main() {
 		panic(err)
 	}
 
-	if err := g.Exec(*varNameFlag); err != nil {
+	b, err := g.Exec(*varNameFlag)
+	if err != nil {
+		panic(err)
+	}
+
+	if _, err := out.Write(b); err != nil {
 		panic(err)
 	}
 }

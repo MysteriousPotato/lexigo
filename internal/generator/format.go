@@ -15,8 +15,9 @@ var (
 )
 
 var (
-	verbMatcher       = regexp.MustCompile("^%[#+\\-0]?[0-9]*(\\.[0-9]*)?[bcdeEfFgGoOpqstTUvxX]$")
-	formatVerbMatcher = regexp.MustCompile("^(?:\\[])?\\w*\\(?([\\w%#.+-]*)\\)?$")
+	verbMatcher              = regexp.MustCompile("^%[#+\\-0]?[0-9]*(\\.[0-9]*)?[bcdeEfFgGoOpqstTUvxX]$")
+	formatVerbMatcher        = regexp.MustCompile("^(?:\\[])?\\w+(?:\\(([\\w%#.+-]*)\\))?$")
+	formatVerbFromPkgMatcher = regexp.MustCompile("^(?:\\[])?\\w+.\\w+(?:\\(([\\w%#.+-]*)\\))?$")
 )
 
 var (
@@ -78,6 +79,10 @@ func formatFromStr(s string) (format, error) {
 	f := format{}
 	matches := formatVerbMatcher.FindStringSubmatch(s)
 	matchLen := len(matches)
+	if matchLen == 0 {
+		matches = formatVerbFromPkgMatcher.FindStringSubmatch(s)
+		matchLen = len(matches)
+	}
 	if matchLen == 0 {
 		return format{}, fmt.Errorf("%w %q", errInvalidFormat, s)
 	}

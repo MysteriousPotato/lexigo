@@ -63,16 +63,16 @@ func TestFormatFromStr(t *testing.T) {
 			},
 		}, {
 			name:       "custom type w/o verb",
-			expression: "potato",
+			expression: "potato.Potato",
 			expectFormat: format{
-				typeStr: "potato",
+				typeStr: "potato.Potato",
 				verb:    "%v",
 			},
 		}, {
 			name:       "custom type w/ verb",
-			expression: "potato(%+v)",
+			expression: "potato.Potato(%+v)",
 			expectFormat: format{
-				typeStr: "potato",
+				typeStr: "potato.Potato",
 				verb:    "%+v",
 			},
 		}, {
@@ -81,7 +81,7 @@ func TestFormatFromStr(t *testing.T) {
 			expectErr:  errInvalidFormat,
 		}, {
 			name:       "invalid format verb",
-			expression: "potato(%(v)",
+			expression: "potato(%{v)",
 			expectErr:  errInvalidFormat,
 		}, {
 			name:       "invalid verb too many letters",

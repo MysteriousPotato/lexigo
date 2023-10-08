@@ -10,10 +10,16 @@ import (
 var placeholderMatcher = regexp.MustCompile(`{{\.(\S+)}}`)
 
 func toPascalCase(str string) string {
+	if str == "" {
+		return ""
+	}
 	return strings.ToUpper(str[:1]) + str[1:]
 }
 
 func toCamelCase(str string) string {
+	if str == "" {
+		return ""
+	}
 	return strings.ToLower(str[:1]) + str[1:]
 }
 
@@ -91,18 +97,4 @@ func escapePercentChars(s string) string {
 	copy(b[lastInsert+len(indexes):], s[lastInsert:])
 
 	return string(b)
-}
-
-func extendNamespace(namespace, key string) string {
-	if namespace == "" {
-		return key
-	}
-	return namespace + "." + key
-}
-
-func getNames(fieldName string) (string, string, string, string) {
-	typeName := toCamelCase(fieldName)
-	fieldName = toPascalCase(fieldName)
-
-	return fieldName, typeName, typeName + "Value", fieldName + "Placeholders"
 }

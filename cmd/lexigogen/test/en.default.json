@@ -4,7 +4,27 @@
   "myLocaleInt": "myLocale {{.Placeholder:int}}",
   "myLocaleFloat": "myLocale {{.Placeholder:float32(%.2f)}}",
   "myLocaleAny": "myLocale {{.Placeholder:any(%+v)}}",
-  "outer": {
-    "inner": "nested {{.Placeholder1}} {{.Placeholder2}}"
+  "outer1": {
+    "inner": "nested 1 {{.Placeholder1}} {{.Placeholder2}}"
+  },
+  "outer2": {
+    "inner": "nested 2 {{.Placeholder1}} {{.Placeholder2}}"
+  },
+  "outer3": {
+    "outer1": {
+      "inner": "nested 3 {{.Placeholder1}} {{.Placeholder2}}"
+    }
+  },
+  "outer4": {
+    "outer1": {
+      "inner": "nested 4 {{.Placeholder1}} {{.Placeholder2}}"
+    }
+  },
+  "outer5": {
+    "outer6": {
+      "outer1": {
+        "inner": "nested 4 {{.Placeholder1}} {{.Placeholder2}}"
+      }
+    }
   }
 }

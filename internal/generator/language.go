@@ -8,9 +8,9 @@ import (
 
 type languageMap map[string]any
 
-func (m languageMap) get(namespace string) (any, error) {
+func (m languageMap) get(ns *namespace) (any, error) {
 	ref := m
-	seg := slices.DeleteFunc(strings.Split(namespace, "."), func(s string) bool {
+	seg := slices.DeleteFunc(strings.Split(ns.path, "."), func(s string) bool {
 		return s == ""
 	})
 

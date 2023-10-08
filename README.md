@@ -10,12 +10,12 @@ Lexigo is still in the early stage of development, expect breaking changes.
 
 #### Codegen: 
 ```bash
-go install github.com/MysteriousPotato/lexigo/cmd/lexigogen@v0.3.0
+go install github.com/MysteriousPotato/lexigo/cmd/lexigogen@v0.3.1
 ```
 
 #### Library:
 ```bash
-go get github.com/MysteriousPotato/lexigo/pkg@v0.3.0
+go get github.com/MysteriousPotato/lexigo/pkg@v0.3.1
 ```
 
 ## Usage

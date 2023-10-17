@@ -38,6 +38,14 @@ func (m *Matcher) getMatch(lang string) (language.Tag, bool) {
 }
 
 func (m *Matcher) MatchAll(langs ...language.Tag) language.Tag {
+	for _, lang := range langs {
+		for _, tag := range m.supported {
+			if tag == lang {
+				return tag
+			}
+		}
+	}
+
 	var str strings.Builder
 	for _, l := range langs {
 		str.WriteString(l.String())
@@ -45,14 +53,6 @@ func (m *Matcher) MatchAll(langs ...language.Tag) language.Tag {
 
 	if match, ok := m.getMatch(str.String()); ok {
 		return match
-	}
-
-	for _, lang := range langs {
-		for _, tag := range m.supported {
-			if tag == lang {
-				return tag
-			}
-		}
 	}
 
 	match, _, _ := m.internal.Match(langs...)

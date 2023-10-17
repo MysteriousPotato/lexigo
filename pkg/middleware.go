@@ -14,13 +14,13 @@ import (
 //		mux := LanguageMiddleware(i18n.Matcher)(http.DefaultServeMux)
 //		//...
 //	}
-func LanguageMiddleware(matcher language.Matcher) func(http.Handler) http.Handler {
+func LanguageMiddleware(matcher *Matcher) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// ignore the error here
 			// worst case scenario, no accepted language matches and the language will fall back to the default one.
 			acceptedLanguages, _, _ := language.ParseAcceptLanguage(r.Header.Get("Accept-Language"))
-			bestMatch, _, _ := matcher.Match(acceptedLanguages...)
+			bestMatch := matcher.MatchAll(acceptedLanguages...)
 			ctx := WithLanguage(r.Context(), bestMatch)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

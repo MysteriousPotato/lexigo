@@ -21,35 +21,35 @@ func TestLocales(t *testing.T) {
 
 	t.Run("with placeholder", func(t *testing.T) {
 		assert(t, "myLocale % \"test\"", Locales.MyLocaleStr.FromTag(
-			language.English,
+			language.AmericanEnglish,
 			MyLocaleStrPlaceholders{
 				Placeholder: "test",
 			},
 		))
 
 		assert(t, "myLocale 10", Locales.MyLocaleInt.FromTag(
-			language.English,
+			language.AmericanEnglish,
 			MyLocaleIntPlaceholders{
 				Placeholder: 10,
 			},
 		))
 
 		assert(t, "myLocale 10.00", Locales.MyLocaleFloat.FromTag(
-			language.English,
+			language.AmericanEnglish,
 			MyLocaleFloatPlaceholders{
 				Placeholder: 10.0,
 			},
 		))
 
 		assert(t, "myLocale <nil>", Locales.MyLocaleAny.FromTag(
-			language.English,
+			language.AmericanEnglish,
 			MyLocaleAnyPlaceholders{
 				Placeholder: nil,
 			},
 		))
 
 		assert(t, "myLocale other", Locales.MyLocaleOther.FromTag(
-			language.English,
+			language.AmericanEnglish,
 			MyLocaleOtherPlaceholders{
 				Placeholder: other.Other("other"),
 			},
@@ -58,7 +58,7 @@ func TestLocales(t *testing.T) {
 
 	t.Run("nested", func(t *testing.T) {
 		assert(t, "nested 1 test1 10", Locales.Outer1.Inner.FromTag(
-			language.English,
+			language.AmericanEnglish,
 			Outer1InnerPlaceholders{
 				Placeholder1: "test1",
 				Placeholder2: "10",
@@ -120,23 +120,23 @@ func TestLocales(t *testing.T) {
 func BenchmarkLocales(b *testing.B) {
 	b.Run("simple", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			Locales.MyLocale.FromTag(language.English)
+			Locales.MyLocale.FromTag(language.BritishEnglish)
 		}
 	})
 
-	b.Run("simple locale", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			Locales.MyLocale.Locale().FromTag(language.English)
-		}
-	})
-
-	b.Run("simple with matcher", func(b *testing.B) {
+	b.Run("simple exact match", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			Locales.MyLocale.FromTag(language.AmericanEnglish)
 		}
 	})
 
-	b.Run("simple locale with matcher", func(b *testing.B) {
+	b.Run("simple locale", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			Locales.MyLocale.Locale().FromTag(language.BritishEnglish)
+		}
+	})
+
+	b.Run("simple locale exact match", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			Locales.MyLocale.Locale().FromTag(language.AmericanEnglish)
 		}
@@ -144,7 +144,16 @@ func BenchmarkLocales(b *testing.B) {
 
 	b.Run("nested with multiple placeholders", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			Locales.Outer1.Inner.FromTag(language.English, Outer1InnerPlaceholders{
+			Locales.Outer1.Inner.FromTag(language.BritishEnglish, Outer1InnerPlaceholders{
+				Placeholder1: "potato",
+				Placeholder2: "test",
+			})
+		}
+	})
+
+	b.Run("nested with multiple placeholders exact match", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			Locales.Outer1.Inner.FromTag(language.AmericanEnglish, Outer1InnerPlaceholders{
 				Placeholder1: "potato",
 				Placeholder2: "test",
 			})
@@ -158,20 +167,11 @@ func BenchmarkLocales(b *testing.B) {
 					Placeholder1: "potato",
 					Placeholder2: "test",
 				}).
-				FromTag(language.English)
+				FromTag(language.BritishEnglish)
 		}
 	})
 
-	b.Run("nested with multiple placeholders and matcher", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
-			Locales.Outer1.Inner.FromTag(language.AmericanEnglish, Outer1InnerPlaceholders{
-				Placeholder1: "potato",
-				Placeholder2: "test",
-			})
-		}
-	})
-
-	b.Run("nested locale with multiple placeholders and matcher", func(b *testing.B) {
+	b.Run("nested locale with multiple placeholders exact match", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			Locales.Outer1.Inner.
 				Locale(Outer1InnerPlaceholders{

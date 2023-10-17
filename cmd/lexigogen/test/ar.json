@@ -1,0 +1,31 @@
+{
+  "myLocale": "myLocale % ar",
+  "myLocaleStr": "myLocale % {{.Placeholder:string(%q)}} ar",
+  "myLocaleInt": "myLocale {{.Placeholder:int}}",
+  "myLocaleFloat": "myLocale {{.Placeholder:float32(%.2f)}} ar",
+  "myLocaleAny": "myLocale {{.Placeholder:any(%+v)}} ar",
+  "myLocaleOther": "myLocale {{.Placeholder:other.Other}} ar",
+  "outer1": {
+    "inner": "nested 1 {{.Placeholder2}} {{.Placeholder1}} ar"
+  },
+  "outer2": {
+    "inner": "nested 2 {{.Placeholder2}} {{.Placeholder1}} ar"
+  },
+  "outer3": {
+    "outer1": {
+      "inner": "nested 3 {{.Placeholder1}} {{.Placeholder2}} ar"
+    }
+  },
+  "outer4": {
+    "outer1": {
+      "inner": "nested 4 {{.Placeholder1}} {{.Placeholder2}} ar"
+    }
+  },
+  "outer5": {
+    "outer6": {
+      "outer1": {
+        "inner": "nested 4 {{.Placeholder1}} {{.Placeholder2}} ar"
+      }
+    }
+  }
+}
